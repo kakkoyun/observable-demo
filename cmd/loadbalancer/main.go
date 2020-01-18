@@ -26,6 +26,8 @@ import (
 
 const namespace = "loadbalancer"
 
+// TODO: Add global metric examples
+
 //nolint: funlen
 func main() {
 	var (
