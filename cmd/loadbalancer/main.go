@@ -14,12 +14,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/observatorium/observable-demo/pkg/conntrack"
-	"github.com/observatorium/observable-demo/pkg/lbtransport"
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
+
+	"github.com/observatorium/observable-demo/pkg/conntrack"
+	extpromhttp "github.com/observatorium/observable-demo/pkg/extprom/http"
+	"github.com/observatorium/observable-demo/pkg/lbtransport"
 )
 
 const namespace = "loadbalancer"
@@ -74,10 +76,9 @@ func main() {
 			Transport: lbtransport.NewLoadBalancingTransport(static, picker, lbtransport.NewMetrics(reg)),
 		}
 
-		// TODO: Add http middleware: request{code, handler, method}
-		// Shared metric - we can share dashboards, alerts.
+		ins := extpromhttp.NewInstrumentationMiddleware(reg)
 		mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-		mux.Handle("/lb", l7LoadBalancer)
+		mux.Handle("/lb", ins.NewHandler("lb", l7LoadBalancer))
 
 		srv := &http.Server{Addr: *addr, Handler: mux}
 

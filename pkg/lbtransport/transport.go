@@ -88,7 +88,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	targets := t.discovery.Targets()
 	if len(targets) == 0 {
 		runutil.ExhaustCloseWithLogOnErr(r.Body)
-		return nil, errors.Errorf("lb: no target is available for %s")
+		return nil, errors.Errorf("lb: no target is available")
 	}
 
 	if r.Body != nil {
@@ -99,7 +99,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		r.Body = newReplayableReader(body)
 	}
 
-	for r.Context().Err == nil { // nolint: govet
+	for r.Context().Err() == nil {
 		target := t.picker.Pick(targets)
 
 		// Override the host for downstream Tripper, usually http.DefaultTransport.
