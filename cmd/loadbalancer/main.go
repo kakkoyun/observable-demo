@@ -19,10 +19,12 @@ import (
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
 )
 
 const namespace = "loadbalancer"
 
+//nolint: funlen
 func main() {
 	var (
 		addr             = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
@@ -36,17 +38,19 @@ func main() {
 
 		ctx = context.Background()
 	)
+
 	flag.Parse()
 
 	// Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
-		// TODO: version!
+		version.NewCollector("observable-demo"),
+		prometheus.NewBuildInfoCollector(),
 		prometheus.NewGoCollector(),
 		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 			Name: "configured_failed_target_backoff_duration_seconds",
 			Help: "Configured backoff time for unavailable target.",
-		}, func() float64 { return blacklistBackoff.Seconds() }),
+		}, func() float64 { return blacklistBackoff.Seconds() }), // nolint: gocritic
 	)
 
 	// TODO: Tripperware metrics
@@ -101,6 +105,7 @@ func main() {
 	if err := g.Run(); err != nil {
 		log.Fatalf("running command failed %v; exiting\n", err)
 	}
+
 	log.Println("exiting")
 }
 
